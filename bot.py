@@ -13,6 +13,7 @@ from utils.flights import parse_query, parse_tracking_query
 
 load_dotenv()
 
+
 app = Flask(__name__)
 slack_event_apapter = SlackEventAdapter(
                         os.environ.get('SLACK_SIGNING_SECRET'),'/slack/events',app)
@@ -57,14 +58,14 @@ def help():
     help_text = """
         Use the following */commands*.
         /search_fight *origin_code* *destination_code* *[YYYY-MM-DD]* *[no_passengers]* *[class]* 
-        You must provide origin airport code and destination airport code.
-        default search date to today\'s date.
-        default no_passengers is 1
-        default class is \'E\' or you can use \'B\'.\n
+            You must provide origin airport code and destination airport code.
+            default search date to today\'s date.
+            default no_passengers is 1
+            default class is \'E\' or you can use \'B\'.\n
         /list_arrivals *airport_code* *[begintime]* *[endtime]*
-        endtime and begintime must be in format like 2021-12-12\n
+            endtime and begintime must be in format like 2021-12-12\n
         /list_departures *airport_code* *[begintime]* *[endtime]*
-        endtime and begintime must be in format like 2021-12-12\n
+            endtime and begintime must be in format like 2021-12-12\n
         /help to see this help menu.
         """
     client.chat_postMessage(channel=channel_id,text=help_text)
@@ -78,10 +79,12 @@ def get_flights():
     data = request.form
     # print(data)
     channel_id = data.get('channel_id')
+    user_id = data.get('user_id')
     query = data.get('text').split(" ")
     if len(query)>=2:
+        client.chat_postEphemeral(channel=channel_id,user=user_id,text="Your request is being processed!")
         flights = parse_query(query)
-        client.chat_postMessage(channel=channel_id,text=f"Available flights!\n{flights}")
+        client.chat_postMessage(channel=channel_id,text=flights)
     else:
         client.chat_postMessage(channel=channel_id,text="Please provide correct Origin and Destination Airport code.")
 
