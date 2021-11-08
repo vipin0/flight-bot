@@ -15,7 +15,10 @@ def get_all_flights(org,dest,dept_date=datetime.today().strftime("%Y%m%d"),adult
     
         This method uses paytm flight api for retrieving data.
     """
+    if isinstance(dept_date,datetime):
+        dept_date=dept_date.strftime("%Y%m%d")
     url = f"https://travel.paytm.com/api/flights/v2/search?adults={adults}&children=0&class={class_}&client=web&departureDate={dept_date}&origin={org}&infants=0&destination={dest}"
+    # print(url)
     try:
         res = requests.get(url)
     except ConnectionError:
@@ -24,6 +27,9 @@ def get_all_flights(org,dest,dept_date=datetime.today().strftime("%Y%m%d"),adult
     if json_res['code'] == 200:
         result = []
         flights = json_res["body"]["onwardflights"]['flights']
+        if len(flights) == 0:
+            return "No flights available."
+    
         for f in flights:
             d = {
                 'origin':f['origin'],
@@ -43,7 +49,7 @@ def get_all_flights(org,dest,dept_date=datetime.today().strftime("%Y%m%d"),adult
             'error':json_res['error'],
             'message':json_res['status']['message']['title']
         }
-        return error
+        return error['message']
 
 
 
@@ -57,14 +63,16 @@ def parse_query(query:list):
 
     if len(optional_detail)==1:
         try:
-            travel_date = datetime.strptime(optional_detail[0],"%Y%m%d")
-        except Exception:
+            print(optional_detail)
+            travel_date = datetime.strptime(optional_detail[0],"%Y-%m-%d")
+        except Exception as e:
+            print(e)
             return "Invalid date!"
         return get_all_flights(origin,dest,travel_date)
 
     elif len(optional_detail) == 2:
         try:
-            travel_date = datetime.strptime(optional_detail[0],"%Y%m%d")
+            travel_date = datetime.strptime(optional_detail[0],"%Y-%m-%d")
         except Exception:
             return "Invalid date!"
         try:
@@ -75,7 +83,7 @@ def parse_query(query:list):
     
     elif len(optional_detail) == 3:
         try:
-            travel_date = datetime.strptime(optional_detail[0],"%Y%m%d")
+            travel_date = datetime.strptime(optional_detail[0],"%Y-%m-%d")
         except Exception:
             return "Invalid date!"
         try:
@@ -116,33 +124,44 @@ def parse_tracking_query(type,query:list):
 
     if len(time_detail)==1:
         try:
-            begin = datetime.strptime(time_detail[0],"%Y-%m-%d %H:%M:%S")
+            begin = datetime.strptime(time_detail[0],"%Y-%m-%d")
         except Exception:
-            return "Invalid begin time! check time format."
+            return "Invalid begin date! check date format."
         result = handle_arrival_depart_call(function_name,icaocode,begin=begin)
         return pretty_print(result,ap_detail)
 
     elif len(time_detail) == 2:
         try:
-            begin = datetime.strptime(time_detail[0],"%Y-%m-%d %H:%M:%S")
+            begin = datetime.strptime(time_detail[0],"%Y-%m-%d")
         except Exception:
-            return "Invalid begin time! check time format."
+            return "Invalid begin date! check date format."
         try:
-            end = datetime.strptime(time_detail[0],"%Y-%m-%d %H:%M:%S")
+            end = datetime.strptime(time_detail[0],"%Y-%m-%d")
         except Exception:
-            return "Invalid begin time! check time format."
+            return "Invalid begin date! check date format."
         result = handle_arrival_depart_call(function_name,icaocode,begin=begin,end=end)
         return pretty_print(result,ap_detail)
 
 def pretty_print(flightdetails,ap_detail):
-
-    return f"""
-        {"*"*65}\n
-        {"Flight Details".center(65)}\n
-        {ap_detail.center(65)}\n
-        {"*"*65}\n
-        {tabulate(flightdetails,headers="firstrow")}
+    """This function print the details in nice manner.
     """
+    # print(flightdetails,len(flightdetails))
+    if len(flightdetails) >=2:
+        return f"""
+            {"*"*65}\n
+            {"Flight Details".center(65)}\n
+            {ap_detail.center(65)}\n
+            {"*"*65}\n
+            {tabulate(flightdetails,headers="firstrow")}
+        """
+    return f"""
+            {"*"*65}\n
+            {"Flight Details".center(65)}\n
+            {ap_detail.center(65)}\n
+            {"*"*65}\n\n
+            {'No flights details found!!'.center(65)}
+        """
+
 
     
         
